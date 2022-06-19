@@ -78,7 +78,6 @@ const sketch = (p5: P5) => {
         Math.min(width, height) / props.n / 2,
         Math.min(width, height) / props.n,
       ];
-      [this.minR, this.maxR] = [10, 20];
       this.config = this.createConfig();
     }
 
@@ -343,10 +342,11 @@ const sketch = (p5: P5) => {
 
     loadThemeConfigs();
     setRandomValues();
+    const color = fxRandom(["#fb4885", "#f8ff68", "#a9ffd4"]);
     bouba1 = new Bouba({
       n: p5.int(fxRandom(10, 50)),
-      boubaColor: "#fb4885",
-      dropsColor: "#fb4885",
+      boubaColor: color,
+      dropsColor: fxRandom([color, undefined]),
     });
     // bouba2 = new Bouba({ n: 50, boubaColor: "#a9ffd4", dropsColor: "#a9ffd4" });
     // bouba3 = new Bouba({ n: 8, boubaColor: "#f8ff68", dropsColor: "#f8ff68" });
@@ -358,23 +358,28 @@ const sketch = (p5: P5) => {
     p5.resizeCanvas(width, height);
   };
 
+  const save = () => {
+    p5.push();
+    const repeat_x = p5.ceil(width / noiseImg.width);
+    const repeat_y = p5.ceil(height / noiseImg.height);
+    p5.blendMode(p5.SCREEN);
+    p5.tint(255, 0.2 * 255);
+    for (let y = 0; y < repeat_y; y++) {
+      for (let x = 0; x < repeat_x; x++) {
+        p5.image(noiseImg, x * noiseImg.width, y * noiseImg.height);
+      }
+    }
+    p5.pop();
+    p5.saveCanvas(`bouba-${fxhash}`, "png");
+  };
+
   p5.keyPressed = () => {
     if (p5.key === "s") {
-      p5.push();
-      const repeat_x = p5.ceil(width / noiseImg.width);
-      const repeat_y = p5.ceil(height / noiseImg.height);
-      p5.blendMode(p5.SCREEN);
-      p5.tint(255, 0.2 * 255);
-      for (let y = 0; y < repeat_y; y++) {
-        for (let x = 0; x < repeat_x; x++) {
-          p5.image(noiseImg, x * noiseImg.width, y * noiseImg.height);
-        }
-      }
-      p5.pop();
-      p5.saveCanvas(`<title>-${fxhash}`, "png");
+      save();
     }
     if (p5.key === "t") {
       bouba1.toggleVersion();
+      drawComposition();
     }
     // if (["1", "2", "3"].includes(p5.key)) {
     //   const boubas = [bouba1, bouba2, bouba3];
