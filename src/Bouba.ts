@@ -12,8 +12,13 @@ export class Bouba {
   maxR: number;
   config: BoubaConfig;
   p5: P5;
+  svg: {
+    shapeVertexs: Point[];
+    circles: (BoubaCircle & { noFill?: true })[];
+  };
   constructor(public props: BoubaProps, p5: P5) {
     this.p5 = p5;
+    this.svg = { circles: [], shapeVertexs: [] };
     this.boubaGraphics = p5.createGraphics(3200, 3200);
     this.tries = 0;
     this.maxTries = 100;
@@ -44,7 +49,7 @@ export class Bouba {
     const dx = (this.boubaGraphics.width - w) / 2 + this.p5.abs(box.l);
     const dy = (this.boubaGraphics.height - h) / 2 + this.p5.abs(box.t);
     this.boubaGraphics.resizeCanvas(Math.max(w, h), Math.max(w, h));
-    return { dx, dy, w, h };
+    return { dx, dy, w, h, box };
   }
 
   addCountourVertex(
@@ -69,6 +74,7 @@ export class Bouba {
     const vx = x + r * this.p5.cos(angle);
     const vy = y + r * this.p5.sin(angle);
     this.boubaGraphics.curveVertex(vx, vy);
+    this.svg.shapeVertexs.push({ x: vx, y: vy });
   }
 
   addOddVertices(
@@ -106,6 +112,8 @@ export class Bouba {
     this.boubaGraphics.beginShape();
     circles.forEach(({ x, y, r }, i, l) => {
       this.boubaGraphics.circle(x, y, r);
+      this.svg.circles.push({ x, y, r: r / 2 });
+      this.svg.circles.push({ x, y, r: r, noFill: true });
       const prev = this.p5.PI + angles.slice(i - 1)[0];
       const curr = angles[i];
       let [o, f] = i % 2 === 1 ? [prev, curr] : [curr, prev];
@@ -131,6 +139,7 @@ export class Bouba {
     const { correct } = this;
     if (correct) {
       const { dx: bx, dy: by } = this.getBoundingBox();
+      this.svg = { circles: [], shapeVertexs: [] };
       this.boubaGraphics.push();
       this.boubaGraphics.translate(bx + dx, by + dy);
       this.fillShape(color);
@@ -233,5 +242,27 @@ export class Bouba {
     this.draw();
     const img = this.boubaGraphics.get();
     return img;
+  }
+
+  getSvgGroup() {
+    const { w, h, dx, dy, box } = this.getBoundingBox();
+    const { x: fx, y: fy } = this.svg.shapeVertexs[0];
+    const d = [
+      `M${fx} ${fy}`,
+      ...this.svg.shapeVertexs.map(({ x, y }) => `L${x} ${y}`),
+      `L${fx} ${fy}`,
+    ].join(" ");
+
+    const path = `<path d="${d}" fill="${this.props.color}"/>`;
+    const circles = this.svg.circles
+      .filter((c) => !c.noFill)
+      .map(
+        ({ x, y, r, noFill }) =>
+          `<circle style="mix-blend-mode: normal" r="${r}" cx="${x}" cy="${y}" fill="${
+            noFill ? "none" : this.props.color
+          }"/>`
+      )
+      .join("");
+    return { path, circles, w, h, box };
   }
 }

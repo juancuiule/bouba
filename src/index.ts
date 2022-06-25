@@ -93,6 +93,10 @@ const sketch = (p5: P5) => {
         toggle();
         break;
       }
+      case "g": {
+        saveSvg();
+        break;
+      }
     }
   };
 
@@ -101,6 +105,32 @@ const sketch = (p5: P5) => {
     height = window.innerHeight;
     padding = paddingFactor * Math.min(width, height);
     p5.resizeCanvas(width, height);
+  };
+
+  const saveSvg = () => {
+    const groups = boubas.map((b) => b.getSvgGroup());
+    const size = groups.reduce((acc, g) => Math.max(acc, g.w, g.h), 0);
+    const gs = groups
+      .map(({ w, h, path, circles, box }) => {
+        const scaleFactor = w < h ? size / h : size / w;
+        const { dx, dy } = {
+          dx: (size - w * scaleFactor) / 2 - box.l * scaleFactor,
+          dy: (size - h * scaleFactor) / 2 - box.t * scaleFactor,
+        };
+        return `<g transform="translate(${dx}px, ${dy}px) scale(${scaleFactor})">${path} ${circles}</g>`;
+      })
+      .join("");
+    const svg = `<svg style="mix-blend-mode: multiply">${gs}</svg>`;
+
+    const blob = new Blob([svg], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "bouba.svg";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const savePicture = () => {
@@ -115,7 +145,7 @@ const sketch = (p5: P5) => {
       }
     }
     p5.pop();
-    p5.saveCanvas(`bouba-${window.fxhash}`, "png");
+    p5.saveCanvas(`bouba`, "png");
   };
 
   const toggle = () => {
