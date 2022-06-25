@@ -32,12 +32,15 @@ const sketch = (p5: P5) => {
     noiseImage = p5.loadImage("./noise.png");
   };
 
+  let c1: string;
+  let c2: string;
+
   p5.setup = () => {
     p5.createCanvas(width, height);
     padding = paddingFactor * Math.min(width, height);
 
     let paletteKey = fxRandom(Object.keys(palettes)) as keyof typeof palettes;
-    let [c1, c2] = palettes[paletteKey];
+    [c1, c2] = palettes[paletteKey];
 
     boubas = [
       new Bouba({ n: 50, color: c1 }, p5),
@@ -50,10 +53,8 @@ const sketch = (p5: P5) => {
 
     boubas.forEach((b) => {
       b.draw();
-      if (b.isLoading()) {
-        p5.text("loading", 10, 30);
-      } else if (b.failed()) {
-        p5.text("try again", 10, 30);
+      if (b.failed()) {
+        b.drawNew();
       }
     });
 
@@ -80,6 +81,10 @@ const sketch = (p5: P5) => {
       p5.pop();
       p5.noLoop();
       window.fxpreview();
+    } else {
+      if (boubas.some((b) => b.isLoading())) {
+        drawLoading();
+      }
     }
   };
 
@@ -105,6 +110,23 @@ const sketch = (p5: P5) => {
     height = window.innerHeight;
     padding = paddingFactor * Math.min(width, height);
     p5.resizeCanvas(width, height);
+  };
+
+  const drawLoading = () => {
+    p5.push();
+    p5.noStroke();
+    p5.translate(width / 2, height / 2);
+    const r = 30;
+    const x1 = r * p5.cos(p5.frameCount * 0.05);
+    const y1 = r * p5.sin(p5.frameCount * 0.05);
+    const x2 = r * p5.cos(p5.TAU / 2 + p5.frameCount * 0.05);
+    const y2 = r * p5.sin(p5.TAU / 2 + p5.frameCount * 0.05);
+    p5.fill(c1);
+    p5.blendMode(p5.MULTIPLY);
+    p5.circle(x1, y1, 90);
+    p5.fill(c2);
+    p5.circle(x2, y2, 90);
+    p5.pop();
   };
 
   const saveSvg = () => {
@@ -146,6 +168,7 @@ const sketch = (p5: P5) => {
     }
     p5.pop();
     p5.saveCanvas(`bouba`, "png");
+    p5.redraw();
   };
 
   const toggle = () => {
